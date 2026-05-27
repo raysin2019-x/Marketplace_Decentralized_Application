@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marketplace DApp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--border:#2a2a3d;--accent:#7c3aed;--accent2:#06b6d4;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--text:#e2e8f0;--muted:#64748b;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;background-image:radial-gradient(ellipse at 20% 20%,rgba(124,58,237,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(6,182,212,.06) 0%,transparent 50%);}
+    nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid var(--border);background:rgba(10,10,15,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+    .logo{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);}
+    .logo span{color:var(--danger);}
+    .nav-right{display:flex;align-items:center;gap:12px;}
+    .connect-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-family:var(--mono);font-size:13px;padding:10px 22px;border-radius:8px;cursor:pointer;font-weight:700;transition:opacity .2s;}
+    .connect-btn:hover{opacity:.85;}
+    .settings-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:13px;padding:10px 16px;border-radius:8px;cursor:pointer;transition:all .2s;}
+    .settings-btn:hover{color:var(--text);border-color:var(--accent);}
+    .wallet-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+    .wallet-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* Settings Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:520px;margin:20px;}
+    .modal h2{font-family:var(--mono);font-size:18px;margin-bottom:8px;}
+    .modal p{color:var(--muted);font-size:13px;margin-bottom:24px;}
+    .modal-group{margin-bottom:20px;}
+    .modal-group label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+    .modal-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color .2s;}
+    .modal-group input:focus{border-color:var(--accent);}
+    .modal-group input::placeholder{color:var(--muted);}
+    .modal-actions{display:flex;gap:10px;margin-top:8px;}
+    .modal-save{flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+    .modal-save:hover{opacity:.85;}
+    .modal-cancel{padding:12px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:13px;cursor:pointer;transition:all .2s;}
+    .modal-cancel:hover{color:var(--text);}
+
+    main{max-width:1200px;margin:0 auto;padding:40px 24px;}
+    .hero{text-align:center;margin-bottom:48px;}
+    .hero h1{font-family:var(--mono);font-size:clamp(24px,4vw,42px);font-weight:700;line-height:1.1;margin-bottom:12px;}
+    .hero h1 .hl{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .hero p{color:var(--muted);font-size:14px;max-width:480px;margin:0 auto;line-height:1.6;}
+
+    /* Contract info bar */
+    .contract-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;margin-bottom:32px;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+    .contract-bar .label{color:var(--accent2);}
+    .contract-bar .addr{color:var(--text);}
+
+    /* Two-column layout */
+    .layout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;}
+    @media(max-width:700px){.layout{grid-template-columns:1fr;}}
+
+    /* Sidebar menu */
+    .sidebar{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px;position:sticky;top:90px;}
+    .sidebar-section{padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:8px;}
+    .sidebar-section:first-child{margin-top:0;}
+    .menu-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:all .2s;font-family:var(--mono);font-size:13px;color:var(--muted);}
+    .menu-item:hover{background:var(--surface2);color:var(--text);}
+    .menu-item.active{background:rgba(124,58,237,.15);color:var(--accent);}
+    .menu-badge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;}
+    .badge-payable{background:rgba(245,158,11,.15);color:var(--warning);}
+    .badge-write{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-read{background:rgba(6,182,212,.15);color:var(--accent2);}
+
+    /* Content area */
+    .content-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;}
+    .content-card h2{font-family:var(--mono);font-size:16px;margin-bottom:6px;color:var(--text);}
+    .content-card .fn-desc{font-size:13px;color:var(--muted);margin-bottom:24px;}
+
+    .form-group{margin-bottom:18px;}
+    .form-group label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+    .form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
+    .form-group input:focus{border-color:var(--accent);}
+    .form-group input::placeholder{color:var(--muted);}
+    .hint{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--mono);}
+
+    .action-btn{padding:12px 28px;border:none;border-radius:8px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+    .action-btn:hover{opacity:.85;}
+    .action-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .btn-write{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;}
+    .btn-payable{background:linear-gradient(135deg,var(--warning),#d97706);color:#fff;}
+    .btn-read{background:linear-gradient(135deg,var(--accent2),#0891b2);color:#fff;}
+
+    /* Results */
+    .result-box{margin-top:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;}
+    .result-box h3{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
+    .result-empty{color:var(--muted);font-family:var(--mono);font-size:13px;text-align:center;padding:20px;}
+    .listing-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;position:relative;overflow:hidden;}
+    .listing-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+    .card-id{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px;}
+    .card-name{font-size:16px;font-weight:600;margin-bottom:10px;}
+    .card-price{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:12px;color:var(--accent2);}
+    .status-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:20px;margin-left:8px;}
+    .status-sold{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25);}
+    .status-cancelled{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+
+    #toast{position:fixed;bottom:30px;right:30px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:13px;max-width:380px;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:999;}
+    #toast.show{transform:translateY(0);opacity:1;}
+    #toast.success{border-color:var(--success);color:var(--success);}
+    #toast.error{border-color:var(--danger);color:var(--danger);}
+    #toast.info{border-color:var(--accent2);color:var(--accent2);}
+    .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<nav>
+  <div class="logo"><span>Frontend Demo</span></div>
+  <div class="nav-right">
+    <button class="settings-btn" onclick="openSettings()">&#9881; Settings</button>
+    <div id="walletArea">
+      
+    </div>
+  </div>
+</nav>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>// Settings</h2>
+    <p>Configure your contract address. Connect your wallet via MetaMask.</p>
+    <div class="modal-group">
+      <label>Contract Address</label>
+      <input id="cfgContract" type="text" placeholder="0x..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="modal-save" onclick="saveSettings()">Save & Apply</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="hero">
+    <h1>Decentralized <span class="hl">Marketplace</span></h1>
+    <p>Interact with your smart contract in an easier way</p>
+  </div>
+
+  <div class="contract-bar">
+    <span class="label">CONTRACT</span>
+    <span class="addr" id="contractDisplay">Not set — configure in Settings</span>
+    <span style="margin-left:auto;color:var(--success);font-size:11px;">&#11044; Sepolia</span>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">Write</div>
+      <button class="menu-item active" onclick="showPanel('listItem',this)">
+        listItem <span class="menu-badge badge-write">nonpayable</span>
+      </button>
+      <button class="menu-item" onclick="showPanel('buyItem',this)">
+        buyItem <span class="menu-badge badge-payable">payable</span>
+      </button>
+      <button class="menu-item" onclick="showPanel('cancelListing',this)">
+        cancelItem <span class="menu-badge badge-write">nonpayable</span>
+      </button>
+      <div class="sidebar-section">Read</div>
+      <button class="menu-item" onclick="showPanel('getActiveListings',this)">
+        ActiveListings <span class="menu-badge badge-read">view</span>
+      </button>
+      <button class="menu-item" onclick="showPanel('getSoldListings',this)">
+        SoldListings <span class="menu-badge badge-read">view</span>
+      </button>
+      <button class="menu-item" onclick="showPanel('getCancelledListings',this)">
+        CancelledListings <span class="menu-badge badge-read">view</span>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="content-card" id="contentArea">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+var CONTRACT   = "";
+var SEPOLIA    = "0xaa36a7";
+var account    = null;
+var toastTmr   = null;
+
+// Function selectors (verified from Etherscan)
+var S_ACTIVE    = "0xe589689f";
+var S_SOLD      = "0x58969ba3";
+var S_CANCELLED = "0x8b35936d";
+var S_LIST      = "0x8511c937";
+var S_BUY       = "0xe7fb74c7";
+var S_CANCEL    = "0x51563f8e";
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById("cfgContract").value = CONTRACT || "";
+  document.getElementById("settingsModal").classList.add("open");
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("open");
+}
+
+function saveSettings() {
+  var c = document.getElementById("cfgContract").value.trim();
+  if (c && c.startsWith("0x") && c.length === 42) {
+    CONTRACT = c;
+    document.getElementById("contractDisplay").textContent = c;
+    toast("Contract address updated!", "success");
+  } else if (c) {
+    toast("Invalid contract address", "error"); return;
+  }
+  closeSettings();
+}
+
+// ── Wallet ────────────────────────────────────────────────────────────────────
+function connectWallet() {
+  if (!window.ethereum) { toast("MetaMask not found. Please install it.", "error"); return; }
+  window.ethereum.request({ method: "eth_requestAccounts" })
+    .then(function(accounts) {
+      account = accounts[0];
+      return window.ethereum.request({ method: "eth_chainId" });
+    })
+    .then(function(chainId) {
+      if (chainId !== SEPOLIA) {
+        return window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: SEPOLIA }]
+        });
+      }
+    })
+    .then(function() {
+      document.getElementById("walletDisplay").textContent = account.slice(0,6) + "..." + account.slice(-4);
+      toast("Wallet connected!", "success");
+      window.ethereum.on("accountsChanged", function() { location.reload(); });
+      window.ethereum.on("chainChanged", function() { location.reload(); });
+    })
+    .catch(function(e) { toast(e.message || "Connection failed", "error"); });
+}
+
+// ── Panel switching ───────────────────────────────────────────────────────────
+function showPanel(name, btn) {
+  document.querySelectorAll(".menu-item").forEach(function(m) { m.classList.remove("active"); });
+  btn.classList.add("active");
+  var panels = {
+    listItem:            renderListItem,
+    buyItem:             renderBuyItem,
+    cancelListing:       renderCancelListing,
+    getActiveListings:   renderGetActive,
+    getSoldListings:     renderGetSold,
+    getCancelledListings:renderGetCancelled
+  };
+  if (panels[name]) panels[name]();
+}
+
+// ── Panel renderers ───────────────────────────────────────────────────────────
+function renderListItem() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>listItem</h2>' +
+    '<div class="fn-desc">List a new item for sale. Emits <code>ItemListed</code>.</div>' +
+    '<div class="form-group"><label>_name (string)</label>' +
+    '<input id="p_name" type="text" placeholder="e.g. Laptop"/></div>' +
+    '<div class="form-group"><label>_price (uint256) — wei</label>' +
+    '<input id="p_price" type="number" placeholder="e.g. 100"/>' +
+    '<div class="hint">1 ETH = 1,000,000,000,000,000,000 wei</div></div>' +
+    '<button class="action-btn btn-write" onclick="doListItem()">transact</button>' +
+    '<div id="txResult"></div>';
+}
+
+function renderBuyItem() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>buyItem</h2>' +
+    '<div class="fn-desc">Purchase an active listing. Sends exact ETH to seller. Emits <code>ItemSold</code>.</div>' +
+    '<div class="form-group"><label>_id (uint256)</label>' +
+    '<input id="p_id" type="number" placeholder="e.g. 1"/></div>' +
+    '<div class="form-group"><label>Value (wei) — ETH to send</label>' +
+    '<input id="p_value" type="number" placeholder="Must match listing price exactly"/></div>' +
+    '<button class="action-btn btn-payable" onclick="doBuyItem()">transact</button>' +
+    '<div id="txResult"></div>';
+}
+
+function renderCancelListing() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>cancelItem</h2>' +
+    '<div class="fn-desc">Cancel your own active listing. Emits <code>ItemCancelled</code>.</div>' +
+    '<div class="form-group"><label>_id (uint256)</label>' +
+    '<input id="p_id" type="number" placeholder="e.g. 1"/></div>' +
+    '<button class="action-btn btn-write" onclick="doCancelListing()">transact</button>' +
+    '<div id="txResult"></div>';
+}
+
+function renderGetActive() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>ActiveListings</h2>' +
+    '<div class="fn-desc">Returns all listings with status <strong>Listed</strong> (available for purchase).</div>' +
+    '<button class="action-btn btn-read" onclick="doGetActive()">call</button>' +
+    '<div id="readResult"></div>';
+}
+
+function renderGetSold() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>SoldListings</h2>' +
+    '<div class="fn-desc">Returns all listings with status <strong>Sold</strong>.</div>' +
+    '<button class="action-btn btn-read" onclick="doGetSold()">call</button>' +
+    '<div id="readResult"></div>';
+}
+
+function renderGetCancelled() {
+  document.getElementById("contentArea").innerHTML =
+    '<h2>CancelledListings</h2>' +
+    '<div class="fn-desc">Returns all listings with status <strong>Cancelled</strong>.</div>' +
+    '<button class="action-btn btn-read" onclick="doGetCancelled()">call</button>' +
+    '<div id="readResult"></div>';
+}
+
+// ── Write actions ─────────────────────────────────────────────────────────────
+function doListItem() {
+  var name  = document.getElementById("p_name").value.trim();
+  var price = document.getElementById("p_price").value.trim();
+  if (!name)                        { toast("Name cannot be empty", "error"); return; }
+  if (!price || Number(price) <= 0) { toast("Price must be > 0", "error"); return; }
+  var data = S_LIST + encodeUint(64) + encodeUint(price) + encodeString(name);
+  sendTx(data, null);
+}
+
+function doBuyItem() {
+  var id    = document.getElementById("p_id").value.trim();
+  var value = document.getElementById("p_value").value.trim();
+  if (!id)    { toast("ID cannot be empty", "error"); return; }
+  if (!value) { toast("Value (wei) cannot be empty", "error"); return; }
+  var data = S_BUY + encodeUint(id);
+  sendTx(data, value);
+}
+
+function doCancelListing() {
+  var id = document.getElementById("p_id").value.trim();
+  if (!id) { toast("ID cannot be empty", "error"); return; }
+  var data = S_CANCEL + encodeUint(id);
+  sendTx(data, null);
+}
+
+function sendTx(data, value) {
+  var result = document.getElementById("txResult");
+  result.innerHTML = '<div style="margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span> Waiting for MetaMask...</div>';
+  ethSend(data, value)
+    .then(function(receipt) {
+      result.innerHTML = '<div style="margin-top:16px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;">' +
+        '<div style="color:var(--success);margin-bottom:8px;">&#10003; Transaction confirmed!</div>' +
+        '<div style="color:var(--muted);">Block: <span style="color:var(--text)">' + parseInt(receipt.blockNumber,16) + '</span></div>' +
+        '<div style="color:var(--muted);margin-top:4px;">Tx: <a href="https://sepolia.etherscan.io/tx/' + receipt.transactionHash + '" target="_blank" style="color:var(--accent2)">' + receipt.transactionHash.slice(0,20) + '...</a></div>' +
+        '</div>';
+      toast("Transaction confirmed!", "success");
+    })
+    .catch(function(e) {
+      result.innerHTML = '<div style="margin-top:16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--danger);">&#10005; ' + esc(e.message) + '</div>';
+      toast(e.message || "Transaction failed", "error");
+    });
+}
+
+// ── Read actions ──────────────────────────────────────────────────────────────
+function doGetActive() {
+  var result = document.getElementById("readResult");
+  result.innerHTML = '<div style="margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span> Loading...</div>';
+  ethCall(S_ACTIVE).then(function(hex) {
+    renderListings(decodeListings(hex), result, "active");
+  }).catch(function(e) {
+    result.innerHTML = '<div style="margin-top:16px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error: ' + esc(e.message) + '</div>';
+  });
+}
+
+function doGetSold() {
+  var result = document.getElementById("readResult");
+  result.innerHTML = '<div style="margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span> Loading...</div>';
+  ethCall(S_SOLD).then(function(hex) {
+    renderListings(decodeListings(hex), result, "sold");
+  }).catch(function(e) {
+    result.innerHTML = '<div style="margin-top:16px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error: ' + esc(e.message) + '</div>';
+  });
+}
+
+function doGetCancelled() {
+  var result = document.getElementById("readResult");
+  result.innerHTML = '<div style="margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span> Loading...</div>';
+  ethCall(S_CANCELLED).then(function(hex) {
+    renderListings(decodeListings(hex), result, "cancelled");
+  }).catch(function(e) {
+    result.innerHTML = '<div style="margin-top:16px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderListings(items, container, type) {
+  if (!items.length) {
+    container.innerHTML = '<div class="result-box"><div class="result-empty">No items found</div></div>';
+    return;
+  }
+  var badge = "";
+  if (type === "sold")      badge = '<span class="status-badge status-sold">&#10003; Sold</span>';
+  if (type === "cancelled") badge = '<span class="status-badge status-cancelled">&#10005; Cancelled</span>';
+
+  var html = '<div class="result-box"><h3>Results (' + items.length + ' item' + (items.length !== 1 ? 's' : '') + ')</h3>';
+  items.forEach(function(item) {
+    html += '<div class="listing-card">' +
+      '<div class="card-id"># ' + item.id + '</div>' +
+      '<div class="card-name">' + esc(item.name) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">' +
+        '<div class="card-price">&#9830; ' + item.price + ' wei</div>' +
+        badge +
+      '</div></div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ── ABI Encoding ──────────────────────────────────────────────────────────────
+function padLeft(hex, len) {
+  while (hex.length < len) hex = "0" + hex;
+  return hex;
+}
+
+function encodeUint(n) {
+  return padLeft(parseInt(n).toString(16), 64);
+}
+
+function encodeString(str) {
+  var bytes = [];
+  for (var i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i));
+  var lenHex = encodeUint(bytes.length);
+  var dataHex = "";
+  for (var i = 0; i < bytes.length; i++) dataHex += padLeft(bytes[i].toString(16), 2);
+  while (dataHex.length % 64 !== 0) dataHex += "00";
+  return lenHex + dataHex;
+}
+
+// ── ABI Decoding ──────────────────────────────────────────────────────────────
+function hexToDec(hexStr) {
+  if (!hexStr || hexStr === "0") return "0";
+  var num = [];
+  for (var i = 0; i < hexStr.length; i++) {
+    var carry = parseInt(hexStr[i], 16);
+    for (var j = num.length - 1; j >= 0; j--) {
+      var val = num[j] * 16 + carry;
+      num[j] = val % 10;
+      carry = Math.floor(val / 10);
+    }
+    while (carry > 0) { num.unshift(carry % 10); carry = Math.floor(carry / 10); }
+  }
+  return num.length ? num.join("") : "0";
+}
+
+function decodeListings(hex) {
+  if (!hex || hex === "0x" || hex.length < 10) return [];
+  var d = hex.slice(2);
+  if (d.length < 128) return [];
+
+  function readUint(byteOff) {
+    var pos = byteOff * 2;
+    var s = d.slice(pos, pos + 64);
+    if (!s || s.length < 64) return 0;
+    return parseInt(s, 16);
+  }
+
+  function readHex(byteOff) {
+    var pos = byteOff * 2;
+    return (d.slice(pos, pos + 64) || "0").replace(/^0+/, "") || "0";
+  }
+
+  // word 0: byte offset to array
+  var arrOff = readUint(0);
+  // at arrOff: array length
+  var arrLen = readUint(arrOff);
+  if (arrLen === 0 || arrLen > 10000) return [];
+
+  // tuple offsets start at arrOff+32, relative to arrOff+32
+  var tuplesBase = arrOff + 32;
+  var items = [];
+  for (var i = 0; i < arrLen; i++) {
+    var tupRelOff = readUint(tuplesBase + i * 32);
+    var tupAbsOff = tuplesBase + tupRelOff;
+
+    var id         = readUint(tupAbsOff);
+    var nameRelOff = readUint(tupAbsOff + 32);
+    var price      = hexToDec(readHex(tupAbsOff + 64));
+    var status     = readUint(tupAbsOff + 96);
+
+    var nameAbsOff = tupAbsOff + nameRelOff;
+    var nameLen    = readUint(nameAbsOff);
+    var nameHex    = d.slice((nameAbsOff + 32) * 2, (nameAbsOff + 32) * 2 + nameLen * 2);
+    var name = "";
+    for (var j = 0; j < nameHex.length; j += 2)
+      name += String.fromCharCode(parseInt(nameHex.slice(j, j + 2), 16));
+
+    items.push({ id: id, name: name, price: price, status: status });
+  }
+  return items;
+}
+
+// ── eth_call ──────────────────────────────────────────────────────────────────
+function ethCall(selector) {
+  return window.ethereum.request({
+    method: "eth_call",
+    params: [{ to: CONTRACT, data: selector }, "latest"]
+  });
+}
+
+// ── eth_sendTransaction ───────────────────────────────────────────────────────
+function ethSend(data, value) {
+  if (!window.ethereum) {
+    return Promise.reject(new Error("MetaMask not found. Please install it."));
+  }
+  return window.ethereum.request({ method: "eth_requestAccounts" })
+    .then(function(accounts) {
+      account = accounts[0];
+      var params = { from: account, to: CONTRACT, data: data, gas: "0x493E0" };
+      if (value) params.value = "0x" + parseInt(value).toString(16);
+      return window.ethereum.request({ method: "eth_sendTransaction", params: [params] });
+    })
+    .then(function(txHash) {
+      toast("Transaction sent! Waiting for confirmation...", "info");
+      return waitForTx(txHash);
+    });
+}
+
+function waitForTx(hash) {
+  return new Promise(function(resolve, reject) {
+    var attempts = 0;
+    function check() {
+      window.ethereum.request({ method: "eth_getTransactionReceipt", params: [hash] })
+        .then(function(receipt) {
+          if (receipt) {
+            if (receipt.status === "0x1") resolve(receipt);
+            else reject(new Error("Transaction reverted on-chain"));
+          } else if (++attempts < 60) {
+            setTimeout(check, 2000);
+          } else {
+            reject(new Error("Timeout waiting for transaction"));
+          }
+        });
+    }
+    setTimeout(check, 2000);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function toast(msg, type) {
+  var el = document.getElementById("toast");
+  el.className = "show " + (type || "info");
+  el.textContent = msg;
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(function() { el.classList.remove("show"); }, 4500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderListItem();
+</script>
+</body>
+</html>
