@@ -8,7 +8,7 @@ This application is built in Solidity and deployed on the Sepolia testnet. Users
 
 ## System Architecture
 
-<img src="architecture.png" alt="Marketplace DApp Architecture" width="440"/>
+<img src="architecture.png" alt="Marketplace DApp Architecture" width="680"/>
 
 ---
 
